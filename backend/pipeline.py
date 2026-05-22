@@ -18,9 +18,9 @@ FEATURE_COLUMNS = [
 MODEL_FEATURES = [col for col in FEATURE_COLUMNS if col not in ['net_stock']]
 
 def predict_demand(features_dict: dict, model_path: str = "models/xgboost_model.pkl") -> float:
-    \"\"\"
+    """
     Loads serialized model and performs inference for demand forecasting.
-    \"\"\"
+    """
     if not os.path.exists(model_path):
         # Graceful fallback in case champion file is missing
         backup_paths = [
@@ -49,9 +49,9 @@ def predict_demand(features_dict: dict, model_path: str = "models/xgboost_model.
     return max(0.0, pred)
 
 def generate_inventory_alerts(predicted_demand: float, net_stock: float) -> dict:
-    \"\"\"
+    """
     Evaluates net stock against predicted demand to trigger alerts and estimate stockout risk.
-    \"\"\"
+    """
     # Classify Inventory Status
     if net_stock < predicted_demand:
         status = "Understocked"
@@ -103,9 +103,9 @@ def generate_inventory_alerts(predicted_demand: float, net_stock: float) -> dict
     }
 
 def generate_reorder_recommendations(predicted_demand: float, net_stock: float) -> dict:
-    \"\"\"
+    """
     Triggers reorder recommendations and applies 1.5x safety stock formula.
-    \"\"\"
+    """
     reorder_required = int(predicted_demand > net_stock)
     
     if reorder_required == 1:
