@@ -30,13 +30,19 @@ class RAGEngine:
 
     def ingest_data(self):
         """
-        Reads inventory predictions and compiles textual documents ready for semantic embedding.
+        Reads inventory predictions from the static CSV path and indexes it.
         """
-        if not os.path.exists(self.data_path):
+        if not self.data_path or not os.path.exists(self.data_path):
             print(f"[RAG WARNING] Source data file '{self.data_path}' is missing. Initializing empty RAG index.")
             return
             
         df = pd.read_csv(self.data_path)
+        self.build_index(df)
+
+    def build_index(self, df: pd.DataFrame):
+        """
+        Reads a DataFrame of predictions and compiles textual documents ready for semantic embedding.
+        """
         print(f"[RAG] Ingesting {len(df)} records for vector index...")
         
         docs = []
@@ -101,9 +107,11 @@ class RAGEngine:
             else:
                 print("[RAG] FAISS library not found. Seamlessly falling back to robust Pure-Numpy Cosine Similarity search engine.")
         else:
+            self.embeddings = None
+            self.faiss_index = None
             print("[RAG] Empty dataset loaded. No embeddings generated.")
 
-    def search(self, query: str, k: int = 3) -> list:
+    def search(self, query: str, k: int = 3, user_id: int = None) -> list:
         """
         Performs semantic search across indexed logs to retrieve contextually matching insights.
         """
@@ -156,4 +164,16 @@ class RAGEngine:
                     "metadata": self.metadata[idx]
                 })
                 
+        # Persist queries and results to rag_query_log database table
+        from database_setup import get_connection, log_rag_query
+        conn = get_connection()
+        try:
+            top_docs = [res.get("metadata", {}).get("product_name", "Unknown Product") for res in results]
+            response_text = "\n\n".join([res["document"] for res in results])
+            log_rag_query(conn, user_id or 1, query, top_docs, response_text)
+        except Exception as e:
+            print(f"[RAG DB Log Error] Failed to log query: {str(e)}")
+        finally:
+            conn.close()
+            
         return results

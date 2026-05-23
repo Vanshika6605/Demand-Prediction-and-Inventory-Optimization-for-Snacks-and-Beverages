@@ -108,19 +108,19 @@ def health_check():
         "deployment_ready": True
     }
 
-@app.post("/predict", response_model=PredictResponse)
-def api_predict_demand(payload: PredictRequest):
+@app.post("/predict", response_model=List[PredictResponse])
+def api_predict_demand(payload: List[PredictRequest]):
     try:
-        # Convert request to aligned model input format
-        features = payload.dict(by_alias=True)
+        results = []
         model_path = os.path.join("models", "xgboost_model.pkl")
-        
-        pred = predict_demand(features, model_path)
-        
-        return PredictResponse(
-            predicted_demand=round(pred, 2),
-            model_used="XGBoost Regressor (Champion)"
-        )
+        for item in payload:
+            features = item.dict(by_alias=True)
+            pred = predict_demand(features, model_path)
+            results.append(PredictResponse(
+                predicted_demand=round(pred, 2),
+                model_used="XGBoost Regressor (Champion)"
+            ))
+        return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

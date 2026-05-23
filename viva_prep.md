@@ -170,3 +170,12 @@ Retail sales patterns are highly dynamic; historical patterns change over time (
 1. **Data Drift Detection:** Implement a daily job comparing the feature distributions of active REST requests against the baseline training dataset using the **Kolmogorov-Smirnov (KS) test** or **Population Stability Index (PSI)**. If PSI exceeds `0.2`, it indicates significant drift and triggers a retraining alert.
 2. **Concept Drift Detection (Performance Monitoring):** Monitor prediction error metrics (MAE and R²) on a rolling 7-day window by joining model predictions with actual sales records returned from POS (Point of Sale) terminal telemetry.
 3. **Automated Triggered Retraining:** If prediction accuracy drops below a predefined threshold (e.g., $R^2 < 85\%$) or every 30 days, an automated CI/CD pipeline (e.g., Airflow / Prefect) is triggered to retrain the XGBoost models using the latest sliding window of sales data.
+
+---
+
+### Q11: How does your RAG system handle queries for unseen products (SKUs) or dates not present in the index?
+**Answer:**
+1. **Dense Semantic Matching:** Because we utilize a pre-trained `sentence-transformers/all-MiniLM-L6-v2` dense embedding model, the vector space represents *meanings* rather than exact keyword tokens. If a user queries an unseen product (e.g. "Juice boxes") that wasn't explicitly indexed but belongs to an indexed semantic neighborhood (e.g. "Cold Drinks & Juices"), the vector search will retrieve the closest matching categories or similar SKU logs based on semantic similarity.
+2. **Graceful Similarity Score Thresholds:** If the similarity score of the top-retrieved documents falls below a baseline threshold (e.g. $< 0.35$ cosine similarity), the RAG engine UI displays a warning that no exact matching logs exist, while still showing the closest contextual matches to provide diagnostic guidance.
+3. **Keyword-Dense Metadata Fallbacks:** The index metadata stores structured keys (`product_name`, `date`, `inventory_status`). When the semantic encoder cannot find a high-confidence match, the backend falls back to filtering the DataFrame directly by string tokens to surface exact keywords when query strings contain specific product terms.
+

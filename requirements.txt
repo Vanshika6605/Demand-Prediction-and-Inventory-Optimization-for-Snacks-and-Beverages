@@ -11,3 +11,5 @@ streamlit
 sentence-transformers
 plotly
 pydantic
+openpyxl
+
